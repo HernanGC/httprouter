@@ -10,7 +10,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support for global Middleware.
 - Added unit and bench tests.
 
-
 ## [0.1.0] - 2025-06-15
 
 ### Added
