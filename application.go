@@ -8,6 +8,7 @@ type methodHandlerMap map[string]http.HandlerFunc
 
 type Application struct {
 	mux                  *http.ServeMux
+	mws                  []Middleware
 	pathMethodHandlerMap map[string]methodHandlerMap
 }
 
@@ -16,6 +17,11 @@ func NewApplication(mux *http.ServeMux) WebApplication {
 		mux:                  mux,
 		pathMethodHandlerMap: make(map[string]methodHandlerMap),
 	}
+}
+
+func (a *Application) WithGlobalMiddlewares(mws ...Middleware) WebApplication {
+	a.mws = append(a.mws, mws...)
+	return a
 }
 
 func (a *Application) handle(method string, path string, handler http.HandlerFunc, mws ...Middleware) {
@@ -33,12 +39,12 @@ func (a *Application) handle(method string, path string, handler http.HandlerFun
 		})
 	}
 
-	a.pathMethodHandlerMap[path][method] = a.middlewares(handler, mws...)
+	a.pathMethodHandlerMap[path][method] = a.middleware(handler, mws...)
 }
 
 func (a *Application) allowedMethods(path string) string {
 	methods := ""
-	for m, _ := range a.pathMethodHandlerMap[path] {
+	for m := range a.pathMethodHandlerMap[path] {
 		if methods != "" {
 			methods += ", "
 		}
@@ -47,7 +53,14 @@ func (a *Application) allowedMethods(path string) string {
 	return methods
 }
 
-func (a *Application) middlewares(handler http.HandlerFunc, mws ...Middleware) http.HandlerFunc {
+func (a *Application) middleware(handler http.HandlerFunc, mws ...Middleware) http.HandlerFunc {
+	// First, apply route-specific middleware
+	result := a.applyMiddleware(handler, mws...)
+	// Then apply global middleware
+	return a.applyMiddleware(result, a.mws...)
+}
+
+func (a *Application) applyMiddleware(handler http.HandlerFunc, mws ...Middleware) http.HandlerFunc {
 	for i := len(mws) - 1; i >= 0; i-- {
 		handler = mws[i](handler)
 	}

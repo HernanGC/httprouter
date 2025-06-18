@@ -10,6 +10,7 @@ type WebApplication interface {
 	Put(path string, handler http.HandlerFunc, mws ...Middleware)
 	Patch(path string, handler http.HandlerFunc, mws ...Middleware)
 	Delete(path string, handler http.HandlerFunc, mws ...Middleware)
+	WithGlobalMiddlewares(mws ...Middleware) WebApplication
 }
 
 type Middleware func(handlerFunc http.HandlerFunc) http.HandlerFunc
